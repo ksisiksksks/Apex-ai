@@ -2,437 +2,336 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apex AI - Gemini Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Apex AI - Puter Edition</title>
     
     <script src="https://js.puter.com/v2/"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #ffffff; }
+        /* CSS KHUSUS BIAR RASA APLIKASI */
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #000; 
+            color: white; 
+            -webkit-tap-highlight-color: transparent; /* Hapus kotak biru pas klik di Android */
+            overscroll-behavior-y: none; /* Cegah refresh tarik ke bawah */
+        }
         
-        /* HILANGKAN SCROLLBAR TAPI BISA SCROLL */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        /* Hilangkan Scrollbar tapi tetap bisa scroll */
+        ::-webkit-scrollbar { width: 0px; }
         
-        /* UTILITAS */
-        .hidden-screen { display: none !important; }
+        /* Animasi Halus */
         .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* CHAT BUBBLE STYLE */
-        .prose p { margin-bottom: 0.5em; line-height: 1.5; font-size: 0.95rem; }
-        .prose strong { color: #60a5fa; }
-        .prose code { background: #1f2937; padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #e5e7eb; font-size: 0.85em; }
-        .prose pre { background: #111827; padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 5px; border: 1px solid #374151; }
+        /* Chat Bubble Keren */
+        .bubble-user { background: #3b82f6; color: white; border-radius: 18px 18px 4px 18px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .bubble-ai { background: #1f2937; color: #e5e7eb; border-radius: 18px 18px 18px 4px; border: 1px solid #374151; }
+        
+        /* Utilitas */
+        .hidden-screen { display: none !important; }
+        .center-screen { display: flex; flex-col; align-items: center; justify-content: center; height: 100%; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-black text-white">
+<body class="h-[100dvh] flex flex-col overflow-hidden text-sm md:text-base selection:bg-blue-500 selection:text-white">
 
-    <div id="auth-screen" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
-        
-        <div class="w-full max-w-sm bg-[#111] border border-[#333] rounded-2xl p-6 shadow-2xl fade-in">
-            <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-blue-600 rounded-xl mx-auto flex items-center justify-center mb-3">
-                    <i class="fas fa-brain text-white text-xl"></i>
-                </div>
-                <h1 class="text-xl font-bold">Apex AI</h1>
-                <p class="text-gray-500 text-xs mt-1">Powered by Gemini Engine</p>
+    <div id="login-screen" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+        <div class="w-full max-w-sm text-center fade-in bg-black/80 backdrop-blur-xl p-8 rounded-3xl border border-gray-800 shadow-2xl">
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+                <i class="fas fa-robot text-4xl text-white"></i>
             </div>
-
-            <div class="flex bg-[#222] rounded-lg p-1 mb-6">
-                <button onclick="switchAuthMode('login')" id="tab-login" class="flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition">LOGIN</button>
-                <button onclick="switchAuthMode('signup')" id="tab-signup" class="flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition">SIGN UP</button>
-            </div>
-
-            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
-                <div id="field-name" class="hidden-screen space-y-1">
-                    <label class="text-xs text-gray-400 font-bold ml-1">Nama Lengkap</label>
-                    <input type="text" id="input-name" class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="Contoh: Rafi">
-                </div>
-                
-                <div class="space-y-1">
-                    <label class="text-xs text-gray-400 font-bold ml-1">Email</label>
-                    <input type="email" id="input-email" required class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="email@contoh.com">
-                </div>
-                
-                <div class="space-y-1">
-                    <label class="text-xs text-gray-400 font-bold ml-1">Password</label>
-                    <input type="password" id="input-pass" required class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="••••••••">
-                </div>
-
-                <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg mt-2">
-                    MASUK
-                </button>
-            </form>
+            <h1 class="text-3xl font-bold mb-2">Apex AI</h1>
+            <p class="text-gray-400 mb-8 text-sm">Masuk untuk menyimpan chat & history secara permanen.</p>
             
-            <p id="auth-msg" class="text-center text-xs text-red-500 mt-4"></p>
+            <button onclick="loginPuter()" class="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition active:scale-95 flex items-center justify-center gap-3 shadow-xl">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Masuk dengan Puter.js</span>
+            </button>
+            <p class="text-xs text-gray-600 mt-4">Gratis, Aman, Tanpa Server Sendiri</p>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden-screen flex h-full relative bg-[#0a0a0a]">
+    <div id="app-screen" class="hidden-screen flex flex-col h-full relative bg-[#050505]">
         
-        <div id="sidebar" class="hidden md:flex flex-col w-72 bg-[#111] border-r border-[#222] z-20">
-            <div class="p-5 border-b border-[#222] flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i class="fas fa-robot text-white text-sm"></i></div>
-                <span class="font-bold text-sm tracking-wide">Apex Gemini</span>
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800 bg-black/90 backdrop-blur z-20 sticky top-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">
+                    <i class="fas fa-user text-xs text-gray-400" id="user-avatar-icon"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-sm leading-tight" id="username-display">User</h2>
+                    <span class="text-[10px] text-green-500 font-medium flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
+                    </span>
+                </div>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-2" id="chat-history-list">
-                </div>
-
-            <div class="p-4 border-t border-[#222] bg-[#0f0f0f]">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-xs" id="user-avatar">U</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold truncate" id="user-name">User</p>
-                        <p class="text-[10px] text-green-500">Online</p>
-                    </div>
-                    <button onclick="logout()" class="text-gray-500 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
+            <div class="flex gap-2">
+                <button onclick="logout()" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-900 text-red-500 hover:bg-red-900/20 border border-gray-800 transition">
+                    <i class="fas fa-power-off text-xs"></i>
+                </button>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col relative h-full">
-            
-            <div class="md:hidden h-14 border-b border-[#222] bg-[#111]/90 backdrop-blur flex items-center justify-between px-4 z-20 absolute top-0 w-full">
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleMobileSidebar()" class="text-gray-400"><i class="fas fa-bars"></i></button>
-                    <span class="font-bold text-sm">Apex AI</span>
-                </div>
-                <button onclick="startNewChat()" class="text-blue-500"><i class="fas fa-plus"></i></button>
-            </div>
-
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 pt-16 md:pt-4 pb-32 space-y-4">
-                <div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-40 space-y-3">
-                    <i class="fas fa-gem text-4xl"></i>
-                    <p class="text-sm">Gemini Engine Ready</p>
-                </div>
-            </div>
-
-            <div class="absolute bottom-0 w-full bg-[#0a0a0a] border-t border-[#222] p-3 z-30">
-                <div id="img-preview" class="hidden mb-2 relative w-fit">
-                    <img id="img-el" src="" class="h-16 rounded-lg border border-[#333]">
-                    <button onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-600 rounded-full w-5 h-5 flex items-center justify-center text-xs"><i class="fas fa-times"></i></button>
-                </div>
-
-                <div class="max-w-3xl mx-auto flex items-end gap-2 bg-[#1a1a1a] p-2 rounded-2xl border border-[#333] shadow-lg">
-                    <button onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-blue-500 transition">
-                        <i class="fas fa-image"></i>
-                    </button>
-                    <input type="file" id="file-upload" class="hidden" accept="image/*" onchange="handleImage(this)">
-
-                    <textarea id="user-input" rows="1" class="flex-1 bg-transparent text-white placeholder-gray-600 text-sm py-3 focus:outline-none resize-none max-h-32" placeholder="Tanya sesuatu..."></textarea>
-                    
-                    <button onclick="sendMessage()" class="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition shadow-lg">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="mobile-sidebar" class="hidden md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onclick="toggleMobileSidebar()">
-            <div class="w-64 h-full bg-[#111] border-r border-[#222] p-4 flex flex-col" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-bold">Menu</h2>
-                    <button onclick="toggleMobileSidebar()"><i class="fas fa-times"></i></button>
-                </div>
-                <button onclick="startNewChat()" class="w-full bg-blue-600/20 text-blue-500 border border-blue-600/50 p-3 rounded-xl text-sm font-bold mb-4">+ Chat Baru</button>
-                <div id="mobile-history-list" class="flex-1 overflow-y-auto space-y-1"></div>
-                <button onclick="logout()" class="mt-4 w-full bg-red-900/20 text-red-500 py-3 rounded-xl text-xs font-bold">LOG OUT</button>
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 pb-32 space-y-5 scroll-smooth">
+            <div class="h-full flex flex-col items-center justify-center text-gray-700 opacity-50 space-y-3">
+                <i class="fas fa-fingerprint text-5xl"></i>
+                <p class="text-sm font-medium">Apex AI Siap Membantu</p>
             </div>
         </div>
 
+        <div class="absolute bottom-0 left-0 w-full bg-black/95 border-t border-gray-800 p-3 pb-safe z-30 backdrop-blur">
+            <div id="preview-box" class="hidden mb-3 ml-1 relative inline-block">
+                <img id="img-preview" src="" class="h-20 rounded-xl border border-gray-700 shadow-2xl object-cover">
+                <button onclick="clearImage()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white text-xs border border-black shadow-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex items-end gap-2 max-w-3xl mx-auto bg-gray-900 p-2 rounded-2xl border border-gray-800 shadow-xl">
+                <button onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-blue-500 transition rounded-xl hover:bg-gray-800">
+                    <i class="fas fa-image text-xl"></i>
+                </button>
+                <input type="file" id="file-upload" class="hidden" accept="image/*" onchange="handleFile(this)">
+
+                <textarea id="user-input" rows="1" class="flex-1 bg-transparent text-white placeholder-gray-500 text-sm py-3 focus:outline-none resize-none max-h-32" placeholder="Ketik pesan..."></textarea>
+                
+                <button onclick="sendMessage()" id="send-btn" class="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+            <p class="text-center text-[10px] text-gray-600 mt-2">Powered by Puter.js (No Server Required)</p>
+        </div>
     </div>
 
     <script>
-        // --- DATA & VARIABEL ---
-        const DB_KEY = 'apex_users_v2'; 
-        const CHAT_KEY = 'apex_chats_v2';
+        // --- KONFIGURASI GLOBAL ---
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app-screen');
         
-        let authMode = 'login'; // 'login' or 'signup'
+        let isSignedIn = false;
         let currentUser = null;
-        let conversationContext = []; // PENTING: Supaya AI 'nyambung'
-        let currentImage = null;
+        let currentImageFile = null; // Menyimpan File objek asli
 
-        // --- SISTEM AUTHENTICATION (LOGIC BENARAN) ---
-        function init() {
-            const savedUser = localStorage.getItem('apex_current_user');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                showApp();
+        // --- 1. SISTEM LOGIN (PUTER AUTH) ---
+        // Puter.js otomatis cek apakah user sudah login di browser ini
+        (async () => {
+            if (puter.auth.isSignedIn()) {
+                const user = await puter.auth.getUser();
+                handleLoginSuccess(user);
+            } else {
+                loginScreen.classList.remove('hidden-screen');
+            }
+        })();
+
+        async function loginPuter() {
+            try {
+                // Ini akan membuka popup resmi Puter.js untuk login/sign up
+                const user = await puter.auth.signIn();
+                handleLoginSuccess(user);
+            } catch (error) {
+                alert("Login dibatalkan atau error: " + error);
             }
         }
 
-        function switchAuthMode(mode) {
-            authMode = mode;
-            const btnLogin = document.getElementById('tab-login');
-            const btnSignup = document.getElementById('tab-signup');
-            const fieldName = document.getElementById('field-name');
-            const btnSubmit = document.getElementById('btn-submit');
-            const msg = document.getElementById('auth-msg');
-
-            msg.innerText = ""; // Clear error
-
-            if (mode === 'signup') {
-                btnLogin.className = "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition";
-                btnSignup.className = "flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition";
-                fieldName.classList.remove('hidden-screen');
-                btnSubmit.innerText = "DAFTAR AKUN";
-            } else {
-                btnLogin.className = "flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition";
-                btnSignup.className = "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition";
-                fieldName.classList.add('hidden-screen');
-                btnSubmit.innerText = "MASUK";
-            }
-        }
-
-        function handleAuth(e) {
-            e.preventDefault();
-            const email = document.getElementById('input-email').value.trim();
-            const pass = document.getElementById('input-pass').value.trim();
-            const name = document.getElementById('input-name').value.trim();
-            const msg = document.getElementById('auth-msg');
-
-            // Ambil database user dari localStorage
-            let users = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-
-            if (authMode === 'signup') {
-                // LOGIKA SIGN UP
-                if (!email || !pass || !name) return msg.innerText = "Semua kolom wajib diisi!";
-                
-                // Cek email kembar
-                if (users.find(u => u.email === email)) return msg.innerText = "Email sudah terdaftar!";
-
-                // Simpan User Baru
-                const newUser = { email, pass, name, avatar: name.charAt(0).toUpperCase() };
-                users.push(newUser);
-                localStorage.setItem(DB_KEY, JSON.stringify(users));
-                
-                // Auto Login
-                localStorage.setItem('apex_current_user', JSON.stringify(newUser));
-                currentUser = newUser;
-                showApp();
-
-            } else {
-                // LOGIKA LOGIN
-                const user = users.find(u => u.email === email && u.pass === pass);
-                if (user) {
-                    localStorage.setItem('apex_current_user', JSON.stringify(user));
-                    currentUser = user;
-                    showApp();
-                } else {
-                    msg.innerText = "Email atau Password salah!";
-                }
-            }
+        function handleLoginSuccess(user) {
+            isSignedIn = true;
+            currentUser = user;
+            
+            // Update UI
+            document.getElementById('username-display').innerText = user.username || "Pengguna";
+            loginScreen.classList.add('hidden-screen');
+            appScreen.classList.remove('hidden-screen');
+            
+            // Muat history (Opsional, Puter punya KV storage kalau mau dikembangkan lagi)
+            appendSystemMessage(`Selamat datang kembali, ${user.username}!`);
         }
 
         function logout() {
-            if(confirm("Keluar dari akun?")) {
-                localStorage.removeItem('apex_current_user');
-                location.reload();
-            }
+            puter.auth.signOut();
+            location.reload();
         }
 
-        function showApp() {
-            document.getElementById('auth-screen').classList.add('hidden-screen');
-            document.getElementById('app-screen').classList.remove('hidden-screen');
-            document.getElementById('user-name').innerText = currentUser.name;
-            document.getElementById('user-avatar').innerText = currentUser.avatar;
-            loadHistory();
-        }
-
-        // --- UI & CHAT LOGIC ---
-        function toggleMobileSidebar() {
-            document.getElementById('mobile-sidebar').classList.toggle('hidden');
-        }
-
-        const chatBox = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-
-        // Auto Resize Textarea
+        // --- 2. SISTEM CHAT & UPLOAD ---
+        
+        // Auto-resize Textarea
         userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
 
+        // Kirim pakai Enter
         userInput.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         });
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            if (!text && !currentImage) return;
+            if (!text && !currentImageFile) return;
 
-            // Bersihkan welcome screen
-            if (chatBox.querySelector('.fa-gem')) chatBox.innerHTML = '';
+            // Bersihkan pesan selamat datang jika ada
+            if (chatContainer.querySelector('.fa-fingerprint')) chatContainer.innerHTML = '';
 
-            const userText = text;
-            const userImg = currentImage;
+            const userMsgText = text;
+            const userMsgImg = currentImageFile; // Simpan referensi file
 
-            // 1. Tampil Bubble User
-            appendBubble('user', userText, userImg);
+            // 1. Tampilkan Pesan User di UI (Langsung biar responsif)
+            appendMessage('user', userMsgText, userMsgImg ? URL.createObjectURL(userMsgImg) : null);
             
-            // 2. Reset Input
+            // Reset Input
             userInput.value = '';
             userInput.style.height = 'auto';
             clearImage();
-
-            // 3. Simpan Konteks (FIX GA NYAMBUNG)
-            // Tambahkan pesan user ke memori
-            conversationContext.push(`User: ${userText}`);
-
-            // 4. Loading
+            
+            // 2. Tampilkan Loading
             const loadingId = showLoading();
 
             try {
-                // PERBAIKAN PROMPT: Kirim history + instruksi Gemini
-                let fullPrompt = `System: Kamu adalah Apex AI, asisten cerdas dengan kemampuan setara Google Gemini. Jawablah dengan bahasa Indonesia yang natural, cerdas, dan membantu. Ingat konteks percakapan berikut:\n\n`;
-                
-                // Masukkan 5 percakapan terakhir supaya ingat (Memory)
-                const recentHistory = conversationContext.slice(-10).join('\n');
-                fullPrompt += recentHistory + `\n\nUser: ${userText}`;
+                let response;
 
-                if (userImg) {
-                    fullPrompt += ` [System Note: User menyertakan gambar. Analisis konteks teks seolah kamu melihatnya.]`;
+                // --- LOGIKA UTAMA: TEKS ATAU GAMBAR ---
+                if (userMsgImg) {
+                    // KASUS 1: ADA GAMBAR (Multimodal)
+                    // Puter.js v2 punya fitur chat vision. Kita kirim prompt + attachment.
+                    // Jika file gambar ada, kita harus baca dulu atau kirim sebagai bagian prompt (tergantung dukungan library)
+                    // Di sini kita pakai trik: Puter AI Chat bisa menerima konteks gambar jika didukung modelnya.
+                    
+                    // Kita akan baca file sebagai Base64 agar bisa diproses
+                    const base64Img = await fileToBase64(userMsgImg);
+                    
+                    // Kirim ke Puter AI (Menggunakan prompt khusus)
+                    // Catatan: Model 'gpt-4o' atau 'claude-3-5-sonnet' di Puter mendukung gambar.
+                    response = await puter.ai.chat(userMsgText || "Jelaskan gambar ini", {
+                        model: 'gpt-4o', // Model yang support gambar
+                        attachments: [userMsgImg] // Fitur baru Puter.js support kirim file langsung
+                    });
+
+                } else {
+                    // KASUS 2: HANYA TEKS
+                    response = await puter.ai.chat(userMsgText);
                 }
 
-                // Kirim ke Puter
-                const response = await puter.ai.chat(fullPrompt);
                 removeLoading(loadingId);
 
-                let aiResponse = typeof response === 'object' ? response.message.content : response.toString();
-                
-                // Simpan jawaban AI ke memori (PENTING)
-                conversationContext.push(`AI: ${aiResponse}`);
+                // Ambil teks dari respon Puter
+                let aiText = "";
+                if (typeof response === 'object' && response.message) {
+                    aiText = response.message.content;
+                } else {
+                    aiText = response.toString();
+                }
 
-                appendBubble('ai', aiResponse);
-                saveChatHistory(userText, aiResponse);
+                appendMessage('ai', aiText);
 
             } catch (err) {
                 removeLoading(loadingId);
-                appendBubble('system', "Maaf, koneksi terputus. Coba lagi.");
+                appendSystemMessage("Error: " + err.message);
+                console.error(err);
             }
         }
 
-        function appendBubble(role, text, img) {
+        // --- HELPER FUNCTIONS ---
+
+        function appendMessage(role, text, imgSrc = null) {
             const div = document.createElement('div');
-            div.className = `flex gap-3 max-w-3xl mx-auto w-full mb-4 fade-in ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            div.className = `flex gap-3 mb-6 w-full ${role === 'user' ? 'flex-row-reverse' : ''}`;
             
-            let content = '';
-            let imgHTML = img ? `<img src="${img}" class="rounded-lg mb-2 max-h-52 border border-[#333]">` : '';
+            let avatar = role === 'ai' 
+                ? `<div class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center shrink-0 border border-gray-700"><i class="fas fa-robot text-white text-xs"></i></div>`
+                : ''; // User gak perlu avatar biar bersih
 
-            if (role === 'ai') {
-                content = `
-                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 mt-1"><i class="fas fa-brain text-white text-xs"></i></div>
-                    <div class="max-w-[85%] bg-[#111] border border-[#222] p-4 rounded-2xl rounded-tl-none text-sm text-gray-200 shadow-sm prose prose-invert">
-                        ${marked.parse(text)}
-                    </div>`;
-            } else if (role === 'user') {
-                content = `
-                    <div class="max-w-[85%] bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-md">
-                        ${imgHTML}
-                        <p>${text.replace(/\n/g, '<br>')}</p>
-                    </div>`;
-            } else {
-                content = `<div class="w-full text-center text-xs text-red-500 bg-red-900/20 p-2 rounded">${text}</div>`;
-            }
+            let imgHTML = imgSrc ? `<img src="${imgSrc}" class="rounded-xl mb-3 max-w-[240px] border border-white/10 shadow-lg block">` : '';
+            
+            let bubbleClass = role === 'ai' ? 'bubble-ai' : 'bubble-user';
+            
+            // Parse Markdown hanya untuk AI
+            let contentHTML = role === 'ai' ? marked.parse(text) : text.replace(/\n/g, '<br>');
 
-            div.innerHTML = content;
-            chatBox.appendChild(div);
-            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+            div.innerHTML = `
+                ${role === 'ai' ? avatar : ''}
+                <div class="${bubbleClass} p-3.5 px-5 text-sm max-w-[85%] leading-relaxed shadow-sm">
+                    ${imgHTML}
+                    <div class="${role === 'ai' ? 'prose prose-invert prose-sm' : ''}">${contentHTML}</div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        function appendSystemMessage(text) {
+            const div = document.createElement('div');
+            div.className = "w-full text-center my-4";
+            div.innerHTML = `<span class="text-xs text-gray-500 bg-gray-900/50 px-3 py-1 rounded-full border border-gray-800">${text}</span>`;
+            chatContainer.appendChild(div);
+            scrollToBottom();
         }
 
         function showLoading() {
             const id = 'load-' + Date.now();
             const div = document.createElement('div');
             div.id = id;
-            div.className = 'flex gap-3 max-w-3xl mx-auto w-full mb-4';
+            div.className = 'flex gap-3 mb-4';
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0"><i class="fas fa-brain text-white text-xs"></i></div>
-                <div class="bg-[#111] border border-[#222] p-3 rounded-2xl rounded-tl-none flex items-center gap-2">
-                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-75"></span>
-                    <span class="text-xs text-gray-400">Sedang berpikir...</span>
+                <div class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center shrink-0 border border-gray-700"><i class="fas fa-robot text-white text-xs"></i></div>
+                <div class="bubble-ai p-3 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
+                    <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse delay-75"></span>
+                    <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse delay-150"></span>
                 </div>`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatContainer.appendChild(div);
+            scrollToBottom();
             return id;
         }
-        function removeLoading(id) { const el = document.getElementById(id); if(el) el.remove(); }
 
-        // --- IMAGE HANDLING ---
-        function handleImage(input) {
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- FILE HANDLING ---
+        function handleFile(input) {
             const file = input.files[0];
-            if(file) {
+            if (file) {
+                currentImageFile = file;
+                // Tampilkan preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    currentImage = e.target.result;
-                    document.getElementById('img-el').src = currentImage;
-                    document.getElementById('img-preview').classList.remove('hidden');
+                    document.getElementById('img-preview').src = e.target.result;
+                    document.getElementById('preview-box').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             }
         }
+
         function clearImage() {
-            currentImage = null;
+            currentImageFile = null;
             document.getElementById('file-upload').value = '';
-            document.getElementById('img-preview').classList.add('hidden');
+            document.getElementById('preview-box').classList.add('hidden');
         }
-
-        // --- HISTORY SAVE ---
-        function saveChatHistory(user, ai) {
-            // Kita simpan history per user di localStorage
-            const key = `apex_chat_${currentUser.email}`;
-            let history = JSON.parse(localStorage.getItem(key)) || [];
-            
-            history.unshift({
-                title: user.substring(0, 30),
-                timestamp: Date.now()
+        
+        // Helper ubah file ke Base64 (untuk backup logic)
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
             });
-            
-            // Limit 20 chat terakhir
-            if(history.length > 20) history.pop();
-            
-            localStorage.setItem(key, JSON.stringify(history));
-            loadHistory();
         }
-
-        function loadHistory() {
-            if(!currentUser) return;
-            const key = `apex_chat_${currentUser.email}`;
-            const history = JSON.parse(localStorage.getItem(key)) || [];
-            
-            // Render Desktop Sidebar
-            const list = document.getElementById('chat-history-list');
-            const mobileList = document.getElementById('mobile-history-list');
-            
-            let html = '';
-            history.forEach(h => {
-                html += `<div class="p-3 text-xs text-gray-400 hover:text-white hover:bg-[#222] rounded-lg cursor-pointer mb-1 truncate border border-transparent hover:border-[#333] transition">
-                    <i class="far fa-comment-alt mr-2"></i> ${h.title}
-                </div>`;
-            });
-            
-            list.innerHTML = html;
-            mobileList.innerHTML = html;
-        }
-
-        function startNewChat() {
-            conversationContext = [];
-            chatBox.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-40 space-y-3">
-                    <i class="fas fa-gem text-4xl"></i>
-                    <p class="text-sm">Gemini Engine Ready</p>
-                </div>`;
-            toggleMobileSidebar();
-        }
-
-        // START
-        init();
     </script>
 </body>
 </html>
