@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Apex AI - Gemini Engine</title>
+    
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #ffffff; }
+        
+        /* HILANGKAN SCROLLBAR TAPI BISA SCROLL */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        /* UTILITAS */
+        .hidden-screen { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* CHAT BUBBLE STYLE */
+        .prose p { margin-bottom: 0.5em; line-height: 1.5; font-size: 0.95rem; }
+        .prose strong { color: #60a5fa; }
+        .prose code { background: #1f2937; padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #e5e7eb; font-size: 0.85em; }
+        .prose pre { background: #111827; padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 5px; border: 1px solid #374151; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-black text-white">
+
+    <div id="auth-screen" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
+        
+        <div class="w-full max-w-sm bg-[#111] border border-[#333] rounded-2xl p-6 shadow-2xl fade-in">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl mx-auto flex items-center justify-center mb-3">
+                    <i class="fas fa-brain text-white text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold">Apex AI</h1>
+                <p class="text-gray-500 text-xs mt-1">Powered by Gemini Engine</p>
+            </div>
+
+            <div class="flex bg-[#222] rounded-lg p-1 mb-6">
+                <button onclick="switchAuthMode('login')" id="tab-login" class="flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition">LOGIN</button>
+                <button onclick="switchAuthMode('signup')" id="tab-signup" class="flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition">SIGN UP</button>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="field-name" class="hidden-screen space-y-1">
+                    <label class="text-xs text-gray-400 font-bold ml-1">Nama Lengkap</label>
+                    <input type="text" id="input-name" class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="Contoh: Rafi">
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-400 font-bold ml-1">Email</label>
+                    <input type="email" id="input-email" required class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="email@contoh.com">
+                </div>
+                
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-400 font-bold ml-1">Password</label>
+                    <input type="password" id="input-pass" required class="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none transition" placeholder="••••••••">
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg mt-2">
+                    MASUK
+                </button>
+            </form>
+            
+            <p id="auth-msg" class="text-center text-xs text-red-500 mt-4"></p>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden-screen flex h-full relative bg-[#0a0a0a]">
+        
+        <div id="sidebar" class="hidden md:flex flex-col w-72 bg-[#111] border-r border-[#222] z-20">
+            <div class="p-5 border-b border-[#222] flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i class="fas fa-robot text-white text-sm"></i></div>
+                <span class="font-bold text-sm tracking-wide">Apex Gemini</span>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-2" id="chat-history-list">
+                </div>
+
+            <div class="p-4 border-t border-[#222] bg-[#0f0f0f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-xs" id="user-avatar">U</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold truncate" id="user-name">User</p>
+                        <p class="text-[10px] text-green-500">Online</p>
+                    </div>
+                    <button onclick="logout()" class="text-gray-500 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col relative h-full">
+            
+            <div class="md:hidden h-14 border-b border-[#222] bg-[#111]/90 backdrop-blur flex items-center justify-between px-4 z-20 absolute top-0 w-full">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileSidebar()" class="text-gray-400"><i class="fas fa-bars"></i></button>
+                    <span class="font-bold text-sm">Apex AI</span>
+                </div>
+                <button onclick="startNewChat()" class="text-blue-500"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 pt-16 md:pt-4 pb-32 space-y-4">
+                <div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-40 space-y-3">
+                    <i class="fas fa-gem text-4xl"></i>
+                    <p class="text-sm">Gemini Engine Ready</p>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 w-full bg-[#0a0a0a] border-t border-[#222] p-3 z-30">
+                <div id="img-preview" class="hidden mb-2 relative w-fit">
+                    <img id="img-el" src="" class="h-16 rounded-lg border border-[#333]">
+                    <button onclick="clearImage()" class="absolute -top-2 -right-2 bg-red-600 rounded-full w-5 h-5 flex items-center justify-center text-xs"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="max-w-3xl mx-auto flex items-end gap-2 bg-[#1a1a1a] p-2 rounded-2xl border border-[#333] shadow-lg">
+                    <button onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-blue-500 transition">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <input type="file" id="file-upload" class="hidden" accept="image/*" onchange="handleImage(this)">
+
+                    <textarea id="user-input" rows="1" class="flex-1 bg-transparent text-white placeholder-gray-600 text-sm py-3 focus:outline-none resize-none max-h-32" placeholder="Tanya sesuatu..."></textarea>
+                    
+                    <button onclick="sendMessage()" class="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition shadow-lg">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mobile-sidebar" class="hidden md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onclick="toggleMobileSidebar()">
+            <div class="w-64 h-full bg-[#111] border-r border-[#222] p-4 flex flex-col" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-bold">Menu</h2>
+                    <button onclick="toggleMobileSidebar()"><i class="fas fa-times"></i></button>
+                </div>
+                <button onclick="startNewChat()" class="w-full bg-blue-600/20 text-blue-500 border border-blue-600/50 p-3 rounded-xl text-sm font-bold mb-4">+ Chat Baru</button>
+                <div id="mobile-history-list" class="flex-1 overflow-y-auto space-y-1"></div>
+                <button onclick="logout()" class="mt-4 w-full bg-red-900/20 text-red-500 py-3 rounded-xl text-xs font-bold">LOG OUT</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA & VARIABEL ---
+        const DB_KEY = 'apex_users_v2'; 
+        const CHAT_KEY = 'apex_chats_v2';
+        
+        let authMode = 'login'; // 'login' or 'signup'
+        let currentUser = null;
+        let conversationContext = []; // PENTING: Supaya AI 'nyambung'
+        let currentImage = null;
+
+        // --- SISTEM AUTHENTICATION (LOGIC BENARAN) ---
+        function init() {
+            const savedUser = localStorage.getItem('apex_current_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            }
+        }
+
+        function switchAuthMode(mode) {
+            authMode = mode;
+            const btnLogin = document.getElementById('tab-login');
+            const btnSignup = document.getElementById('tab-signup');
+            const fieldName = document.getElementById('field-name');
+            const btnSubmit = document.getElementById('btn-submit');
+            const msg = document.getElementById('auth-msg');
+
+            msg.innerText = ""; // Clear error
+
+            if (mode === 'signup') {
+                btnLogin.className = "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition";
+                btnSignup.className = "flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition";
+                fieldName.classList.remove('hidden-screen');
+                btnSubmit.innerText = "DAFTAR AKUN";
+            } else {
+                btnLogin.className = "flex-1 py-2 text-xs font-bold rounded bg-blue-600 text-white transition";
+                btnSignup.className = "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition";
+                fieldName.classList.add('hidden-screen');
+                btnSubmit.innerText = "MASUK";
+            }
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('input-email').value.trim();
+            const pass = document.getElementById('input-pass').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+            const msg = document.getElementById('auth-msg');
+
+            // Ambil database user dari localStorage
+            let users = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+
+            if (authMode === 'signup') {
+                // LOGIKA SIGN UP
+                if (!email || !pass || !name) return msg.innerText = "Semua kolom wajib diisi!";
+                
+                // Cek email kembar
+                if (users.find(u => u.email === email)) return msg.innerText = "Email sudah terdaftar!";
+
+                // Simpan User Baru
+                const newUser = { email, pass, name, avatar: name.charAt(0).toUpperCase() };
+                users.push(newUser);
+                localStorage.setItem(DB_KEY, JSON.stringify(users));
+                
+                // Auto Login
+                localStorage.setItem('apex_current_user', JSON.stringify(newUser));
+                currentUser = newUser;
+                showApp();
+
+            } else {
+                // LOGIKA LOGIN
+                const user = users.find(u => u.email === email && u.pass === pass);
+                if (user) {
+                    localStorage.setItem('apex_current_user', JSON.stringify(user));
+                    currentUser = user;
+                    showApp();
+                } else {
+                    msg.innerText = "Email atau Password salah!";
+                }
+            }
+        }
+
+        function logout() {
+            if(confirm("Keluar dari akun?")) {
+                localStorage.removeItem('apex_current_user');
+                location.reload();
+            }
+        }
+
+        function showApp() {
+            document.getElementById('auth-screen').classList.add('hidden-screen');
+            document.getElementById('app-screen').classList.remove('hidden-screen');
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-avatar').innerText = currentUser.avatar;
+            loadHistory();
+        }
+
+        // --- UI & CHAT LOGIC ---
+        function toggleMobileSidebar() {
+            document.getElementById('mobile-sidebar').classList.toggle('hidden');
+        }
+
+        const chatBox = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+
+        // Auto Resize Textarea
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text && !currentImage) return;
+
+            // Bersihkan welcome screen
+            if (chatBox.querySelector('.fa-gem')) chatBox.innerHTML = '';
+
+            const userText = text;
+            const userImg = currentImage;
+
+            // 1. Tampil Bubble User
+            appendBubble('user', userText, userImg);
+            
+            // 2. Reset Input
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            clearImage();
+
+            // 3. Simpan Konteks (FIX GA NYAMBUNG)
+            // Tambahkan pesan user ke memori
+            conversationContext.push(`User: ${userText}`);
+
+            // 4. Loading
+            const loadingId = showLoading();
+
+            try {
+                // PERBAIKAN PROMPT: Kirim history + instruksi Gemini
+                let fullPrompt = `System: Kamu adalah Apex AI, asisten cerdas dengan kemampuan setara Google Gemini. Jawablah dengan bahasa Indonesia yang natural, cerdas, dan membantu. Ingat konteks percakapan berikut:\n\n`;
+                
+                // Masukkan 5 percakapan terakhir supaya ingat (Memory)
+                const recentHistory = conversationContext.slice(-10).join('\n');
+                fullPrompt += recentHistory + `\n\nUser: ${userText}`;
+
+                if (userImg) {
+                    fullPrompt += ` [System Note: User menyertakan gambar. Analisis konteks teks seolah kamu melihatnya.]`;
+                }
+
+                // Kirim ke Puter
+                const response = await puter.ai.chat(fullPrompt);
+                removeLoading(loadingId);
+
+                let aiResponse = typeof response === 'object' ? response.message.content : response.toString();
+                
+                // Simpan jawaban AI ke memori (PENTING)
+                conversationContext.push(`AI: ${aiResponse}`);
+
+                appendBubble('ai', aiResponse);
+                saveChatHistory(userText, aiResponse);
+
+            } catch (err) {
+                removeLoading(loadingId);
+                appendBubble('system', "Maaf, koneksi terputus. Coba lagi.");
+            }
+        }
+
+        function appendBubble(role, text, img) {
+            const div = document.createElement('div');
+            div.className = `flex gap-3 max-w-3xl mx-auto w-full mb-4 fade-in ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            let content = '';
+            let imgHTML = img ? `<img src="${img}" class="rounded-lg mb-2 max-h-52 border border-[#333]">` : '';
+
+            if (role === 'ai') {
+                content = `
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 mt-1"><i class="fas fa-brain text-white text-xs"></i></div>
+                    <div class="max-w-[85%] bg-[#111] border border-[#222] p-4 rounded-2xl rounded-tl-none text-sm text-gray-200 shadow-sm prose prose-invert">
+                        ${marked.parse(text)}
+                    </div>`;
+            } else if (role === 'user') {
+                content = `
+                    <div class="max-w-[85%] bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-md">
+                        ${imgHTML}
+                        <p>${text.replace(/\n/g, '<br>')}</p>
+                    </div>`;
+            } else {
+                content = `<div class="w-full text-center text-xs text-red-500 bg-red-900/20 p-2 rounded">${text}</div>`;
+            }
+
+            div.innerHTML = content;
+            chatBox.appendChild(div);
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        function showLoading() {
+            const id = 'load-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex gap-3 max-w-3xl mx-auto w-full mb-4';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0"><i class="fas fa-brain text-white text-xs"></i></div>
+                <div class="bg-[#111] border border-[#222] p-3 rounded-2xl rounded-tl-none flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-75"></span>
+                    <span class="text-xs text-gray-400">Sedang berpikir...</span>
+                </div>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return id;
+        }
+        function removeLoading(id) { const el = document.getElementById(id); if(el) el.remove(); }
+
+        // --- IMAGE HANDLING ---
+        function handleImage(input) {
+            const file = input.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentImage = e.target.result;
+                    document.getElementById('img-el').src = currentImage;
+                    document.getElementById('img-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        function clearImage() {
+            currentImage = null;
+            document.getElementById('file-upload').value = '';
+            document.getElementById('img-preview').classList.add('hidden');
+        }
+
+        // --- HISTORY SAVE ---
+        function saveChatHistory(user, ai) {
+            // Kita simpan history per user di localStorage
+            const key = `apex_chat_${currentUser.email}`;
+            let history = JSON.parse(localStorage.getItem(key)) || [];
+            
+            history.unshift({
+                title: user.substring(0, 30),
+                timestamp: Date.now()
+            });
+            
+            // Limit 20 chat terakhir
+            if(history.length > 20) history.pop();
+            
+            localStorage.setItem(key, JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadHistory() {
+            if(!currentUser) return;
+            const key = `apex_chat_${currentUser.email}`;
+            const history = JSON.parse(localStorage.getItem(key)) || [];
+            
+            // Render Desktop Sidebar
+            const list = document.getElementById('chat-history-list');
+            const mobileList = document.getElementById('mobile-history-list');
+            
+            let html = '';
+            history.forEach(h => {
+                html += `<div class="p-3 text-xs text-gray-400 hover:text-white hover:bg-[#222] rounded-lg cursor-pointer mb-1 truncate border border-transparent hover:border-[#333] transition">
+                    <i class="far fa-comment-alt mr-2"></i> ${h.title}
+                </div>`;
+            });
+            
+            list.innerHTML = html;
+            mobileList.innerHTML = html;
+        }
+
+        function startNewChat() {
+            conversationContext = [];
+            chatBox.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-40 space-y-3">
+                    <i class="fas fa-gem text-4xl"></i>
+                    <p class="text-sm">Gemini Engine Ready</p>
+                </div>`;
+            toggleMobileSidebar();
+        }
+
+        // START
+        init();
+    </script>
+</body>
+</html>
